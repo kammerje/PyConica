@@ -35,7 +35,7 @@
 #
 ## Copy relevant fits files from src to dst
 #src = '/priv/mulga2/kjens/NACO/girard/data_with_raw_calibs/'
-#dst = '/priv/mulga2/kjens/test'
+#dst = '/priv/mulga2/kjens/test/'
 #for i in range(0, len(dark_paths)):
 #    copyfile(src+dark_paths[i]+'.fits', dst+'dark_%03d' % i+'.fits')
 #for i in range(0, len(flat_paths)):
@@ -52,7 +52,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Data directory
-dst = '/priv/mulga2/kjens/test'
+dst = '/priv/mulga2/kjens/test/'
 
 """
 Comment out one of the two dark_lists to see how the bad pixel identification
@@ -142,7 +142,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Data directory
-dst = '/priv/mulga2/kjens/test'
+dst = '/priv/mulga2/kjens/test/'
 
 """
 The options make_plots and block_plots will show and block plots of the final
