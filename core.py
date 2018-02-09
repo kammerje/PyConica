@@ -262,6 +262,11 @@ class cube():
             
             # Subtract master dark and normalize by master flat
             frame = np.true_divide(frame-dark, flat)
+            
+            # Subtract background
+            backgrounds[i] = np.median(frame[bad_pixels == 0])
+            frame -= backgrounds[i]
+            
             arrays[i, :, :] = frame
         
         # Shift frames and calculate sum
