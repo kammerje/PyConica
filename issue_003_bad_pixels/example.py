@@ -39,7 +39,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(fmask)
     plt.title('Fourier mask')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 """
 This is the code from my pipeline. It starts with two function definitions, of
@@ -155,7 +155,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(np.median(arrays, axis=0))
     plt.title('Median of data cube')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Get master flat
 fits_file = pyfits.open(dst+'master_flat_'+ds+'.fits')
@@ -168,7 +168,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(flat)
     plt.title('Master flat')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Cut out sub-arrays
 print('Cutting out sub-arrays')
@@ -182,7 +182,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(bad_pixels)
     plt.title('Bad pixel map before stripes removal')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Remove stripes from bad pixel map
 bad_pixels, stripes_map = _remove_stripes(bad_pixels)
@@ -194,7 +194,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(bad_pixels)
     plt.title('Bad pixel map after stripes removal')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Remove bad pixels
 for i in range(0, arrays.shape[0]):

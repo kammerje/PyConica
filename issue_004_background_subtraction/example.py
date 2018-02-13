@@ -36,7 +36,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(np.median(arrays, axis=0))
     plt.title('Median of data cube before bg subtraction')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Subtract background
 backgrounds = np.zeros(arrays.shape[0])
@@ -55,7 +55,7 @@ if (make_plots == True):
     plt.figure()
     plt.imshow(np.median(arrays, axis=0))
     plt.title('Median of data cube after bg subtraction')
-    plt.show(block_plots)
+    plt.show(block=block_plots)
 
 # Save data cube
 fits_header['NAXIS2'] = arrays.shape[1]
