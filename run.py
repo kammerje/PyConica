@@ -7,7 +7,7 @@ Created on Mon Jan 8 2018
 """
 
 
-import core
+import core_new as core
 import os
 import time
 
@@ -15,7 +15,7 @@ import time
 ddir = '/priv/mulga2/kjens/NACO/girard/data_with_raw_calibs/'
 rdir = '/priv/mulga2/kjens/NACO/girard/test/'
 cdir = '/priv/mulga2/kjens/NACO/girard/test/'
-index = 1
+index = 0
 
 #test_dir = '/home/kjens/Downloads/'
 #cube = core.cube(ddir=ddir,
@@ -25,7 +25,7 @@ index = 1
 
 xml_files = [f for f in os.listdir(ddir) if f.endswith('.xml')]
 print('IDENTIFIED '+str(len(xml_files))+' XML FILES')
-time.sleep(10)
+#time.sleep(10)
 
 #start_file = 'NACO.2016-07-22T08:43:59.213.xml'
 #for index in range(0, len(xml_files)):
