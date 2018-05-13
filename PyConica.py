@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.0
-Last edited: 10.05.18
+Version: 1.0.1
+Last edited: 12.05.18
 """
 
 
@@ -13,7 +13,6 @@ Last edited: 10.05.18
 #==============================================================================
 import sys
 sys.path.append('/home/kjens/Python/Packages/opticstools/opticstools/opticstools')
-sys.path.append('/home/kjens/Python/Development/NACO/kernel/xara')
 
 import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
@@ -35,7 +34,7 @@ saturation_threshold = 16400. # see https://www.eso.org/observing/dfo/quality/NA
 saturation_threshold = 16000. # Real value based on detcheck
 linearity_range = 8500. # see https://www.eso.org/observing/dfo/quality/NACO/qc/detmon_qc1.html#top
 linearize = True
-detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2016/detcheck/data_with_raw_calibs/'
+detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2015/detcheck/data_with_raw_calibs/'
 
 shift_as_prior = True
 sub_size = 96
@@ -90,17 +89,44 @@ def fit_polynomial_to_detcheck(detcheck_dir):
     
     # Identify detcheck files
     detcheck_files = [f for f in os.listdir(detcheck_dir) if f.endswith('.fits')]
-    detcheck_header = pyfits.getheader(detcheck_dir+detcheck_files[0])
     
-    # Read detcheck files into array
-    detcheck = np.zeros((len(detcheck_files), detcheck_header['NAXIS2'], detcheck_header['NAXIS1']))
+    # Open detcheck files
     exptime = []
     for i in range(len(detcheck_files)):
-        if (detcheck_header['HIERARCH ESO TPL ID'] == 'NACO_img_cal_Linearity'):
-            detcheck[i] = pyfits.getdata(detcheck_dir+detcheck_files[i], 0)
-            exptime += [pyfits.getheader(detcheck_dir+detcheck_files[i])['EXPTIME']]
-        else:
+        try:
+            fits_file = pyfits.open(detcheck_dir+detcheck_files[i])
+        except:
+            try:
+                detcheck_files[i] = detcheck_files[i].replace(':', '_')
+                fits_file = pyfits.open(detcheck_dir+detcheck_files[i])
+            except:
+                raise UserWarning('Could not find detcheck file '+detcheck_files[i])
+        
+        # Read header
+        fits_header = fits_file[0].header
+        if (fits_header['HIERARCH ESO TPL ID'] != 'NACO_img_cal_Linearity'):
             raise UserWarning('DETCHECK files must be of type NACO_img_cal_Linearity')
+        
+        # Read data into array
+        detcheck_temp = fits_file[0].data
+        fits_file.close()
+        if (len(detcheck_temp.shape) == 3):
+            if (i == 0):
+                detcheck = detcheck_temp
+            else:
+                detcheck = np.append(detcheck, detcheck_temp, axis=0)
+            exptime += [fits_header['EXPTIME']]*detcheck_temp.shape[0]
+                
+        else:
+            if (i == 0):
+                detcheck = np.zeros((1, detcheck_temp.shape[0], detcheck_temp.shape[1]))
+                detcheck[0] = detcheck_temp
+            else:
+                dummy = np.zeros((1, detcheck_temp.shape[0], detcheck_temp.shape[1]))
+                dummy[0] = detcheck_temp
+                detcheck = np.append(detcheck, dummy, axis=0)
+            exptime += [fits_header['EXPTIME']]
+    print('Read detcheck files of shape '+str(detcheck.shape))
     
     # Remove stripes from broken quadrant
     mask1 = detcheck < 32768.
@@ -1199,10 +1225,10 @@ class dark(object):
                 props_grouped += [props_temp]
                 times_grouped += [[fits_header['MJD-OBS']]]
         
-        # Verify output
-        for i in range(len(dark_paths_grouped)):
-            if (len(dark_paths_grouped[i]) != 3):
-                raise UserWarning('Darks should always be taken in sequences of three')
+#        # Verify output
+#        for i in range(len(dark_paths_grouped)):
+#            if (len(dark_paths_grouped[i]) != 3):
+#                raise UserWarning('Darks should always be taken in sequences of three')
         
         # Return lists of lists of grouped dark paths, properties and observing times
         return dark_paths_grouped, props_grouped, times_grouped
@@ -1493,7 +1519,8 @@ class flat(object):
             
             # Verify input
             if (fits_header['HIERARCH ESO TPL NAME'] != 'LW Skyflats'):
-                raise UserWarning('Flats should be of type LW Skyflats')
+                print(fits_header['HIERARCH ESO TPL NAME']+' flats will not be considered')
+                continue
             
             # Extract properties from header
             props_temp = props.copy()
