@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.1
-Last edited: 12.05.18
+Version: 1.0.3
+Last edited: 20.07.18
 """
 
 
@@ -19,9 +19,9 @@ import time
 
 # DIRECTORIES
 #==============================================================================
-ddir = '/priv/mulga2/kjens/NACO/girard_2015/data_with_raw_calibs/'
-rdir = '/priv/mulga2/kjens/NACO/girard_2015/redux/'
-cdir = '/priv/mulga2/kjens/NACO/girard_2015/cubes/'
+ddir = '/priv/mulga2/kjens/NACO/girard_2016/data_with_raw_calibs/'
+rdir = '/priv/mulga2/kjens/NACO/girard_2016/redux/'
+cdir = '/priv/mulga2/kjens/NACO/girard_2016/cubes/'
 
 
 # MAIN
@@ -33,6 +33,9 @@ time.sleep(3)
 
 times = [time.time()]
 for i in range(len(xml_paths)):
+    
+#    if (i == 149):
+#    if (i == 160):
     
     logfile = open('log.txt', 'a')
     logfile.write('--> Processing '+xml_paths[i]+', file %03d' % (i+1)+' of %03d' % (len(xml_paths))+'\n')

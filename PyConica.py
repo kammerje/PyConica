@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.1
-Last edited: 12.05.18
+Version: 1.0.3
+Last edited: 20.07.18
 """
 
 
@@ -32,14 +32,15 @@ block_plots = False
 
 saturation_threshold = 16400. # see https://www.eso.org/observing/dfo/quality/NACO/qc/detmon_qc1.html#top
 saturation_threshold = 16000. # Real value based on detcheck
+saturation_value = 16000. # Pixels with ADC below this value are considered as saturated
 linearity_range = 8500. # see https://www.eso.org/observing/dfo/quality/NACO/qc/detmon_qc1.html#top
-linearize = True
-detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2015/detcheck/data_with_raw_calibs/'
+linearize_data = True
+detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2016/detcheck/data_with_raw_calibs/'
 
 shift_as_prior = True
 sub_size = 96
 
-skip_processed_data = True
+skip_processed_data = False
 
 
 # MAIN
@@ -197,8 +198,9 @@ def fit_polynomial_to_detcheck(detcheck_dir):
 
 print('--> Computing detector linearity correction')
 pp = fit_polynomial_to_detcheck(detcheck_dir=detcheck_dir)
-if (linearize):
+if (linearize_data):
     print('Pixels with ADUs between %.0f and %.0f will be linearized' % (linearity_range, saturation_threshold))
+    saturation_value = pp[3]+pp[2]*saturation_threshold+pp[1]*saturation_threshold**2+pp[0]*saturation_threshold**3
 
 def linearize(frame, pp):
     """
@@ -517,7 +519,7 @@ class cube(object):
         """
         
         # Set telescope dimensions
-        mirror_size = 8.2 # meters
+        mirror_size = 10. # meters
         
         # Extract relevant information from header
         pscale = float(fits_header['PSCALE'])
@@ -658,9 +660,10 @@ class cube(object):
         sat_pixels = data >= saturation_threshold
         
         # Linearize data cube
-        print('Linearizing data cube')
-        data = linearize(frame=data,
-                         pp=pp)
+        if (linearize_data):
+            print('Linearizing data cube')
+            data = linearize(frame=data,
+                             pp=pp)
         
         # Stack data cubes with more than 100 frames
         stacked = 1
@@ -909,12 +912,31 @@ class cube(object):
             
             # Jitter subtraction and cropping to sub_size
             furthest_data = pyfits.getdata(self.cdir+cubes[furthest_cube[i]]+'_cleaned.fits', 0)
+            bad_pixels = np.logical_or(bad_pixels, pyfits.getdata(self.cdir+cubes[furthest_cube[i]]+'_cleaned.fits', 1))
+            sat_pixels = np.logical_or(sat_pixels, np.sum(pyfits.getdata(self.cdir+cubes[furthest_cube[i]]+'_cleaned.fits', 2), axis=0) > 0.5)
             med_furthest_data = np.median(furthest_data, axis=0)
             sub_data = np.zeros((data.shape[0], sub_size, sub_size))
             sub_bad_pixels = np.zeros((sub_size, sub_size))
             sub_sat_pixels = np.zeros((sat_pixels.shape[0], sub_size, sub_size))
+            
+            # Compute background limit before cropping to sub_size
+            szx = fits_header['NAXIS1']
+            szy = fits_header['NAXIS2']
+            cwave = fits_header['CWAVE']
+            pscale = fits_header['PSCALE']
+            lod = cwave/8.0*(180./np.pi*60.*60.*1000.)
+            xy_dist = np.meshgrid((np.arange(szx)), (np.arange(szy)))
+            mask1 = np.sqrt((xy_dist[0]-max_x[i])**2+(xy_dist[1]-max_y[i])**2) > 10.*lod/pscale
+            mask2 = np.sqrt((xy_dist[0]-max_x[furthest_cube[i]])**2+(xy_dist[1]-max_y[furthest_cube[i]])**2) > 10.*lod/pscale
+            mask = mask1 & mask2 & (bad_pixels < 0.5)
+            bg_noise = [] # Median background noise
+            
             for j in range(data.shape[0]):
                 data[j] -= med_furthest_data
+#                data[j] -= furthest_data[j]
+                
+                bg_noise += [np.std(data[j, mask])] # Median background noise
+                
                 sub_data[j] = np.roll(np.roll(data[j],\
                                       int(sub_size/2)-max_y[i], axis=0),\
                                       int(sub_size/2)-max_x[i], axis=1)[0:sub_size, 0:sub_size]
@@ -925,28 +947,32 @@ class cube(object):
                                             int(sub_size/2)-max_y[i], axis=0),\
                                             int(sub_size/2)-max_x[i], axis=1)[0:sub_size, 0:sub_size]
             
+            bg_noise = np.median(bg_noise) # Median background noise
+            print('Background noise = %.0f' % bg_noise)
+                
             if (make_plots):
-                dummy = np.median(sub_data, axis=0)
-                p01 = axarr[0, 1].imshow(dummy, vmin=-50, vmax=50)
-                axarr[0, 1].set_title('Median of jitter subtracted data cube')
-                p10 = axarr[1, 0].imshow(sub_bad_pixels, vmin=0, vmax=1)
-                axarr[1, 0].set_title('Bad pixel map')
-                p11 = axarr[1, 1].imshow(np.sum(sub_sat_pixels, axis=0)/float(sub_sat_pixels.shape[0]), vmin=0, vmax=1)
-                axarr[1, 1].set_title('Saturated pixel map')
-                c00 = plt.colorbar(p00, ax=axarr[0, 0])
-                c00.set_label('Counts', rotation=270, labelpad=20)
-                c01 = plt.colorbar(p01, ax=axarr[0, 1])
-                c01.set_label('Counts', rotation=270, labelpad=20)
-                c11 = plt.colorbar(p11, ax=axarr[1, 1])
-                c11.set_label('Fraction of frames where pixel is saturated', rotation=270, labelpad=20)
-                plt.savefig(self.cdir+cubes[i]+'_jitter.pdf', bbox_inches='tight')
-                plt.show(block=block_plots)
-                plt.close()
+                    dummy = np.median(sub_data, axis=0)
+                    p01 = axarr[0, 1].imshow(dummy, vmin=-50, vmax=50)
+                    axarr[0, 1].set_title('Median of jitter subtracted data cube')
+                    p10 = axarr[1, 0].imshow(sub_bad_pixels, vmin=0, vmax=1)
+                    axarr[1, 0].set_title('Bad pixel map')
+                    p11 = axarr[1, 1].imshow(np.sum(sub_sat_pixels, axis=0)/float(sub_sat_pixels.shape[0]), vmin=0, vmax=1)
+                    axarr[1, 1].set_title('Saturated pixel map')
+                    c00 = plt.colorbar(p00, ax=axarr[0, 0])
+                    c00.set_label('Counts', rotation=270, labelpad=20)
+                    c01 = plt.colorbar(p01, ax=axarr[0, 1])
+                    c01.set_label('Counts', rotation=270, labelpad=20)
+                    c11 = plt.colorbar(p11, ax=axarr[1, 1])
+                    c11.set_label('Fraction of frames where pixel is saturated', rotation=270, labelpad=20)
+                    plt.savefig(self.cdir+cubes[i]+'_jitter.pdf', bbox_inches='tight')
+                    plt.show(block=block_plots)
+                    plt.close()
             
             # Save data cube
             fits_file = pyfits.open(self.cdir+cubes[i]+'_cleaned.fits')
             fits_file[0].header.add_comment('Subtracted '+cubes[furthest_cube[i]]+'_cleaned.fits')
             fits_file[0].data = sub_data
+            fits_file[0].header['BGNOISE'] = bg_noise
             fits_file[1].data = np.uint8(sub_bad_pixels)
             fits_file[2].data = np.uint8(sub_sat_pixels)
             fits_file.writeto(self.cdir+cubes[i]+'_jitter.fits', overwrite=True, output_verify='fix')
@@ -954,7 +980,7 @@ class cube(object):
             logfile = open('log.txt', 'a')
             logfile.write('Data cube background subtracted and saved as '+cubes[i]+'_jitter.fits\n')
             logfile.close()
-        
+            
         pass
     
     def __bad_pixel_correction(self,
@@ -1045,7 +1071,7 @@ class cube(object):
                     
                     # Find extra bad pixels based on variable threshold
                     # FIXME
-                    extra_threshold = 7
+                    extra_threshold = 28
                     current_threshold = np.max([0.25*np.max(np.abs(unsharp_masked[new_bad_pixels == 0])),\
                                                 extra_threshold*np.median(np.abs(extra_frame))]) # Pixels above 1/4 of maximum or above 7 times median are bad
                     extra_bad_pixels = np.abs(unsharp_masked) > current_threshold
@@ -1065,12 +1091,17 @@ class cube(object):
                 # Correct all bad pixels
                 data[j] = self.__fix_bad_pixels(data[j], frame_bad, fmask)
                 bad_pixels_full[j] = frame_bad
-                
+            
+            fits_file = pyfits.open(self.cdir+cubes[i]+'_jitter.fits')
+            fits_file[0].header['PEAK'] = np.median(np.max(data, axis=(1, 2)))
+            fits_file[0].header['PNR'] = float(fits_file[0].header['PEAK'])/float(fits_file[0].header['BGNOISE'])
+            
             if (make_plots):
                 dummy = np.median(data, axis=0)
                 p01 = axarr[0, 1].plot((dummy[sub_size/2, :]+dummy[:, sub_size/2])/2.)
                 axarr[0, 1].set_title('PSF cross-section after correction')
-                axarr[0, 1].text(x=0.1*axarr[0, 1].get_xlim()[0], y=0.9*axarr[0, 1].get_ylim()[1], s='Noise std = %.1f' % np.std(dummy[pmask < 0.5]))
+                axarr[0, 1].text(x=0.1*axarr[0, 1].get_xlim()[0], y=0.9*axarr[0, 1].get_ylim()[1], s='PNR = %.1f' % fits_file[0].header['PNR'])
+                axarr[0, 1].text(x=0.1*axarr[0, 1].get_xlim()[0], y=0.8*axarr[0, 1].get_ylim()[1], s='BGNOISE = %.1f' % fits_file[0].header['BGNOISE'])
                 p11 = axarr[1, 1].imshow(np.sum(bad_pixels_full, axis=0)/float(bad_pixels_full.shape[0]), vmin=0, vmax=1)
                 axarr[1, 1].set_title('Bad pixel map after correction')
                 c11 = plt.colorbar(p11, ax=axarr[1, 1])
@@ -1080,7 +1111,6 @@ class cube(object):
                 plt.close()
             
             # Save data cube
-            fits_file = pyfits.open(self.cdir+cubes[i]+'_jitter.fits')
             fits_file[0].data = data
             fits_file[2].data = np.uint8(bad_pixels_full)
             fits_file[2].header['EXTNAME']  = 'FULL-BAD-PIXEL-MAP'
@@ -1289,11 +1319,11 @@ class dark(object):
         print('Read darks of shape '+str(darks.shape))
         
         # Compute median and variance
+        if (linearize_data):
+            print('Linearizing darks')
+            darks = linearize(frame=darks,
+                              pp=pp)
         med_dark = np.median(darks, axis=0)
-        if (linearize):
-            print('Linearizing master dark')
-            med_dark = linearize(frame=med_dark,
-                                 pp=pp)
         print('Filtering with median filter of size 9')
         med_dark_filtered = nd.median_filter(med_dark, size=9)
         var_dark = np.var(darks, axis=0)
@@ -1316,7 +1346,7 @@ class dark(object):
         print('Median variance difference: '+str(med_var_diff))
         bad_var = dummy2 > var_mult*med_var_diff
         print('Pixels with bad variance: '+str(np.sum(bad_var)))
-        bad_pixels = np.logical_or(bad_med, bad_var, med_dark >= saturation_threshold)
+        bad_pixels = np.logical_or(bad_med, bad_var, med_dark >= saturation_value)
         
         if (make_plots):
             f, axarr = plt.subplots(2, 2, figsize=(12, 9))
@@ -1347,8 +1377,8 @@ class dark(object):
         # Compute readnoise
         for i in range(darks.shape[0]):
             darks[i] -= med_dark
-        readnoise = np.std(darks, axis=0)
-        readnoise = np.mean(readnoise)*np.sqrt(darks.shape[0]-1)/np.sqrt(darks.shape[0]-2)
+        readnoise = np.std(darks, axis=0)*np.sqrt(darks.shape[0]-1)/np.sqrt(darks.shape[0]-2)
+        readnoise = np.mean(readnoise[bad_pixels < 0.5])
         print('Readnoise: %.1f' % readnoise)
         
         # Save master dark
@@ -1601,11 +1631,11 @@ class flat(object):
         print('Read flats of shape '+str(flats.shape))
         
         # Compute median and variance
+        if (linearize_data):
+            print('Linearizing flats')
+            flats = linearize(frame=flats,
+                              pp=pp)
         med_flat = np.median(flats, axis=0)
-        if (linearize):
-            print('Linearizing master flat')
-            med_flat = linearize(frame=med_flat,
-                                 pp=pp)
         print('Filtering with median filter of size 9')
         med_flat_filtered = nd.median_filter(med_flat, size=9)
         var_flat = np.var(flats, axis=0)
@@ -1624,7 +1654,7 @@ class flat(object):
         print('Median variance difference: '+str(med_var_diff))
         bad_var = dummy2 > var_mult*med_var_diff
         print('Pixels with bad variance: '+str(np.sum(bad_var)))
-        bad_pixels = np.logical_or(bad_med, bad_var, med_flat >= saturation_threshold)
+        bad_pixels = np.logical_or(bad_med, bad_var, med_flat >= saturation_value)
         
         if (make_plots):
             f, axarr = plt.subplots(2, 2, figsize=(12, 9))
@@ -1759,4 +1789,3 @@ class flat(object):
             out_file.writeto(self.rdir+out_name+'.fits', overwrite=True, output_verify='fix')
         
         pass
-    
