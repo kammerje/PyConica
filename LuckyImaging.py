@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.3
-Last edited: 20.07.18
+Version: 1.1.0
+Last edited: 07.08.18
 """
 
 
@@ -29,8 +29,8 @@ make_plots = True
 make_unimportant_plots = False
 block_plots = False
 
-cdir = '/priv/mulga2/kjens/NACO/girard_2016/cubes/'
-odir = '/priv/mulga2/kjens/NACO/girard_2016/lucky/'
+cdir = '/priv/mulga2/kjens/NACO/girard_2015/cubes/'
+odir = '/priv/mulga2/kjens/NACO/girard_2015/lucky/'
 
 sub_size = 96
 
@@ -82,7 +82,10 @@ for i in range(len(fits_paths)):
     
     #
     if (i == 0):
-        pmask = __pmask(fits_header=fits_header)
+        cwave = fits_header['CWAVE']
+        pscale = fits_header['PSCALE']
+        lod = cwave/8.2*(180./np.pi*60.*60.*1000.)
+        pmask = ot.circle(sub_size, int(10.*lod/pscale))
         if (make_unimportant_plots):
             plt.figure(figsize=(12, 9))
             plt.imshow(pmask)
@@ -135,9 +138,8 @@ for i in range(len(fits_paths)):
     
     # Only keep frames which have good peak count and good SNR
     mask1 = peak > peak_cut
-#    mask2 = SNR > SNR_cut
-#    mask = mask1 & mask2
-    mask = mask1
+    mask2 = SNR > SNR_cut
+    mask = mask1 & mask2
     
     # Save data cube
     fits_file[0].data = fits_file[0].data[mask]

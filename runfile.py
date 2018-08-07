@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.3
-Last edited: 20.07.18
+Version: 1.1.0
+Last edited: 07.08.18
 """
 
 
@@ -19,9 +19,9 @@ import time
 
 # DIRECTORIES
 #==============================================================================
-ddir = '/priv/mulga2/kjens/NACO/girard_2016/data_with_raw_calibs/'
-rdir = '/priv/mulga2/kjens/NACO/girard_2016/redux/'
-cdir = '/priv/mulga2/kjens/NACO/girard_2016/cubes/'
+ddir = '/priv/mulga2/kjens/NACO/girard_2015/data_with_raw_calibs/'
+rdir = '/priv/mulga2/kjens/NACO/girard_2015/redux/'
+cdir = '/priv/mulga2/kjens/NACO/girard_2015/cubes/'
 
 
 # MAIN

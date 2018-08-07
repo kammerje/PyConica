@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.0.3
-Last edited: 20.07.18
+Version: 1.1.0
+Last edited: 07.08.18
 """
 
 
@@ -35,7 +35,7 @@ saturation_threshold = 16000. # Real value based on detcheck
 saturation_value = 16000. # Pixels with ADC below this value are considered as saturated
 linearity_range = 8500. # see https://www.eso.org/observing/dfo/quality/NACO/qc/detmon_qc1.html#top
 linearize_data = True
-detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2016/detcheck/data_with_raw_calibs/'
+detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2015/detcheck/data_with_raw_calibs/'
 
 shift_as_prior = True
 sub_size = 96
@@ -924,7 +924,7 @@ class cube(object):
             szy = fits_header['NAXIS2']
             cwave = fits_header['CWAVE']
             pscale = fits_header['PSCALE']
-            lod = cwave/8.0*(180./np.pi*60.*60.*1000.)
+            lod = cwave/8.2*(180./np.pi*60.*60.*1000.)
             xy_dist = np.meshgrid((np.arange(szx)), (np.arange(szy)))
             mask1 = np.sqrt((xy_dist[0]-max_x[i])**2+(xy_dist[1]-max_y[i])**2) > 10.*lod/pscale
             mask2 = np.sqrt((xy_dist[0]-max_x[furthest_cube[i]])**2+(xy_dist[1]-max_y[furthest_cube[i]])**2) > 10.*lod/pscale
