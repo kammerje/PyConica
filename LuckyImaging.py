@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.1.0
-Last edited: 07.08.18
+Version: 1.1.1
+Last edited: 20.08.18
 """
 
 
@@ -29,8 +29,8 @@ make_plots = True
 make_unimportant_plots = False
 block_plots = False
 
-cdir = '/priv/mulga2/kjens/NACO/girard_2015/cubes/'
-odir = '/priv/mulga2/kjens/NACO/girard_2015/lucky/'
+cdir = '/priv/mulga2/kjens/NACO/girard_2016/cubes/'
+odir = '/priv/mulga2/kjens/NACO/girard_2016/lucky/'
 
 sub_size = 96
 
@@ -41,35 +41,6 @@ print('--> Scanning cubes directory for bad pixel corrected fits files')
 fits_paths = [f for f in os.listdir(cdir) if f.endswith('bpcorrected.fits')]
 print('Identified '+str(len(fits_paths))+' bad pixel corrected fits files')
 time.sleep(3)
-
-def __pmask(fits_header):
-    """
-    Parameters
-    ----------
-    fits_header : header
-        Header of data cube for which pupil mask should be made
-    
-    Returns
-    -------
-    pmask : array
-        Pupil mask
-    """
-    
-    # Set telescope dimensions (noise will be computed outside the pupil mask, therefore use extra big mask to avoid residuals from the PSF)
-    mirror_size = 12 # meters
-    
-    # Extract relevant information from header
-    pscale = float(fits_header['PSCALE'])
-    cwave = float(fits_header['CWAVE'])
-    
-    # Set scale ratio for Fourier transformation
-    ratio = cwave/(pscale/1000./60./60.*np.pi/180.*sub_size)
-    
-    # Make pupil mask
-    pmask = ot.circle(sub_size, mirror_size/ratio)
-    
-    # Return pupil mask
-    return pmask
 
 for i in range(len(fits_paths)):
     
@@ -97,18 +68,18 @@ for i in range(len(fits_paths)):
     data = fits_file[0].data
     print('Read data of shape '+str(data.shape))
     
-    # Extract peak flux and noise from each frame
+    # Extract peak count and background noise from each frame
     peak = []
-    noise = []
+    bgnoise = []
     for j in range(data.shape[0]):
         peak += [np.max(data[j])]
-        noise += [np.std(data[j][pmask < 0.5])]
-    SNR = np.true_divide(peak, noise)
+        bgnoise += [np.std(data[j][pmask < 0.5])]
+    PNR = np.true_divide(peak, bgnoise)
     
-    # Compute peak flux, noise and SNR thresholds
+    # Compute thresholds
     peak_cut = 0.75*np.median(hq.nlargest(int(0.1*data.shape[0]), peak))
-    noise_cut = 1.1*np.median(hq.nsmallest(int(0.1*data.shape[0]), noise))
-    SNR_cut = 0.75*np.median(hq.nlargest(int(0.1*data.shape[0]), SNR))
+    bgnoise_cut = 1.1*np.median(hq.nsmallest(int(0.1*data.shape[0]), bgnoise))
+    PNR_cut = 0.75*np.median(hq.nlargest(int(0.1*data.shape[0]), PNR))
     
     if (make_plots):
         f, axarr = plt.subplots(3, 1, sharex=True, figsize=(12, 9))
@@ -116,12 +87,12 @@ for i in range(len(fits_paths)):
         axarr[0].axhline(peak_cut, color='red', label='Rejection threshold')
         axarr[0].set_ylabel('Peak flux [ADU]')
         axarr[0].legend(loc='upper right')
-        axarr[1].plot(noise)
-        axarr[1].axhline(noise_cut, color='red', label='Rejection threshold')
+        axarr[1].plot(bgnoise)
+        axarr[1].axhline(bgnoise_cut, color='red', label='Rejection threshold')
         axarr[1].set_ylabel('Noise [standard deviation of ADU]')
         axarr[1].legend(loc='upper right')
-        axarr[2].plot(SNR)
-        axarr[2].axhline(SNR_cut, color='red', label='Rejection threshold')
+        axarr[2].plot(PNR)
+        axarr[2].axhline(PNR_cut, color='red', label='Rejection threshold')
         axarr[2].set_ylabel('SNR')
         axarr[2].set_xlabel('Frame number')
         axarr[2].legend(loc='upper right')
@@ -138,7 +109,7 @@ for i in range(len(fits_paths)):
     
     # Only keep frames which have good peak count and good SNR
     mask1 = peak > peak_cut
-    mask2 = SNR > SNR_cut
+    mask2 = PNR > PNR_cut
     mask = mask1 & mask2
     
     # Save data cube

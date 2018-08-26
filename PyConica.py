@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.1.0
-Last edited: 07.08.18
+Version: 1.1.1
+Last edited: 20.08.18
 """
 
 
@@ -35,7 +35,7 @@ saturation_threshold = 16000. # Real value based on detcheck
 saturation_value = 16000. # Pixels with ADC below this value are considered as saturated
 linearity_range = 8500. # see https://www.eso.org/observing/dfo/quality/NACO/qc/detmon_qc1.html#top
 linearize_data = True
-detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2015/detcheck/data_with_raw_calibs/'
+detcheck_dir = '/priv/mulga2/kjens/NACO/girard_2016/detcheck/data_with_raw_calibs/'
 
 shift_as_prior = True
 sub_size = 96
@@ -704,7 +704,7 @@ class cube(object):
         out_name = str(fits_header['HIERARCH ESO OBS TARG NAME'])
         for key in props.keys():
             out_name += '_'+str(props[key])
-        index = [f for f in os.listdir(self.cdir) if (out_name in f) and ('.fits' in f)]
+        index = [f for f in os.listdir(self.cdir) if (out_name in f) and ('_cleaned.fits' in f)]
         out_name += '_%03d' % len(index)
         
         # Open master dark and master flat
