@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.1.1
-Last edited: 20.08.18
+Version: 1.2.0
+Last edited: 20.11.18
 """
 
 
@@ -107,10 +107,8 @@ for i in range(len(fits_paths)):
         plt.show(block=block_plots)
         plt.close()
     
-    # Only keep frames which have good peak count and good SNR
-    mask1 = peak > peak_cut
-    mask2 = PNR > PNR_cut
-    mask = mask1 & mask2
+    # Only keep frames which have good peak count
+    mask = peak > peak_cut
     
     # Save data cube
     fits_file[0].data = fits_file[0].data[mask]
@@ -118,3 +116,4 @@ for i in range(len(fits_paths)):
     fits_file[3].data = fits_file[3].data[mask]
     fits_file[0].header.add_comment('LuckyImaging: Rejected frames '+str(list(np.where(mask == False)[0])))
     fits_file.writeto(odir+fits_paths[i][:-17]+'_lucky.fits', overwrite=True, output_verify='fix')
+    print('Rejected '+str(data.shape[0]-np.sum(mask))+' frames')

@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.1.1
-Last edited: 20.08.18
+Version: 1.2.0
+Last edited: 20.11.18
 """
 
 
@@ -33,9 +33,6 @@ time.sleep(3)
 
 times = [time.time()]
 for i in range(len(xml_paths)):
-    
-#    if (i == 149):
-#    if (i == 160):
     
     logfile = open('log.txt', 'a')
     logfile.write('--> Processing '+xml_paths[i]+', file %03d' % (i+1)+' of %03d' % (len(xml_paths))+'\n')

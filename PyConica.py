@@ -4,8 +4,8 @@ found at https://www.eso.org/sci/facilities/paranal/instruments/naco.html. This
 library is maintained on GitHub at https://github.com/kammerje/PyConica.
 
 Author: Jens Kammerer
-Version: 1.1.1
-Last edited: 20.08.18
+Version: 1.2.0
+Last edited: 20.11.18
 """
 
 
@@ -16,6 +16,7 @@ sys.path.append('/home/kjens/Python/Packages/opticstools/opticstools/opticstools
 
 import astropy.io.fits as pyfits
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as PathEffects
 import numpy as np
 import opticstools as ot
 import os
@@ -173,23 +174,54 @@ def fit_polynomial_to_detcheck(detcheck_dir):
     yy = pp[3]+pp[2]*xx+pp[1]*xx**2+pp[0]*xx**3
     
     if (make_plots):
-        f, axarr = plt.subplots(1, 2, figsize=(12, 9))
-        axarr[0].plot(x, y, 'o-', label='detcheck data')
-        axarr[0].plot(x, yyL, 'o-', label='linear fit')
-        axarr[0].plot(x, yyC, 'o-', label='cubic fit')
-        axarr[0].axhline(saturation_threshold, color='red', label='saturation threshold')
-        axarr[0].set_xlabel('Exposure time')
-        axarr[0].set_ylabel('ADU (measured)')
-        axarr[0].legend()
-        axarr[1].plot(yyC, yyL, 'o-', label='correction curve')
-        axarr[1].plot(xx, yy, '-', label='cubic fit')
-        axarr[1].axvline(linearity_range, color='red', ls='--', label='linearity range')
-        axarr[1].axvline(saturation_threshold, color='red', label='saturation threshold')
-        axarr[1].set_xlabel('ADU (measured)')
-        axarr[1].set_ylabel('ADU (corrected)')
-        axarr[1].legend()
-        plt.suptitle('Detector linearity correction')
-        plt.savefig(detcheck_dir+'detector_linearity_correction.pdf', bbox_inches='tight')
+        f, axarr = plt.subplots(1, 2, figsize=(12, 6))
+        axarr[0].axhline(linearity_range, color='red', lw=3)
+        text = axarr[0].text(30-1, linearity_range+500, 'linearity range', ha='right', va='bottom', color='red', fontsize=16)
+        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        axarr[0].axhline(saturation_threshold, color='red', lw=3)
+        text = axarr[0].text(0+1, saturation_threshold+500, 'saturation threshold', ha='left', va='bottom', color='red', fontsize=16)
+        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        axarr[0].plot(x, y, 'o-', lw=3, label='detcheck data')
+        axarr[0].plot(x, yyL, 'o-', lw=3, label='linear fit')
+        axarr[0].plot(x, yyC, 'o-', lw=3, label='cubic fit')
+        x_ticks = np.arange(0, 40, 10)
+        y_ticks = np.arange(-4000, 32000, 8000)
+        axarr[0].set_xlim([0, 30])
+        axarr[0].set_ylim([-4000, 28000])
+        axarr[0].set_xticks(x_ticks)
+        axarr[0].set_yticks(y_ticks)
+        axarr[0].set_xticklabels(x_ticks, fontsize=16)
+        axarr[0].set_yticklabels(y_ticks, fontsize=16)
+        axarr[0].set_xlabel('exposure time [s]', fontsize=20)
+        axarr[0].set_ylabel('pixel count (measured)', fontsize=20)
+        axarr[0].tick_params(direction='in')
+        axarr[0].grid()
+        axarr[0].legend(fontsize=20, framealpha=1, loc='lower right')
+        
+        axarr[1].axvline(linearity_range, color='red', lw=3)
+        text = axarr[1].text(linearity_range+500, -4000+500, 'linearity range', ha='left', va='bottom', rotation=90, color='red', fontsize=16)
+        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        axarr[1].axvline(saturation_threshold, color='red', lw=3)
+        text = axarr[1].text(saturation_threshold+500, -4000+500, 'saturation threshold', ha='left', va='bottom', rotation=90, color='red', fontsize=16)
+        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])        
+        axarr[1].plot(yyC, yyL, 'o-', lw=3, label='correction curve')
+        axarr[1].plot(xx, yy, lw=3, label='cubic fit')
+        x_ticks = np.arange(-4000, 24000, 8000)
+        y_ticks = np.arange(-4000, 32000, 8000)
+        axarr[1].set_xlim([-4000, 20000])
+        axarr[1].set_ylim([-4000, 28000])
+        axarr[1].set_xticks(x_ticks)
+        axarr[1].set_yticks(y_ticks)
+        axarr[1].set_xticklabels(x_ticks, fontsize=16)
+        axarr[1].set_yticklabels(y_ticks, fontsize=16)
+        axarr[1].set_xlabel('pixel count (measured)', fontsize=20)
+        axarr[1].set_ylabel('pixel count (linearized)', fontsize=20)
+        axarr[1].grid()
+        axarr[1].tick_params(direction='in')
+        axarr[1].legend(fontsize=20, framealpha=1, loc='upper left')
+        
+        plt.tight_layout()
+        plt.savefig(detcheck_dir+'detector_linearization_correction.pdf', bbox_inches='tight')
         plt.show(block=block_plots)
         plt.close()
     
@@ -716,12 +748,15 @@ class cube(object):
         bad_pixels = pyfits.getdata(self.rdir+flat_path, 1)
         
         # Extract relevant information from header
-        rot_start = float(fits_header['ESO ADA ABSROT START'])
-        rot_end = float(fits_header['ESO ADA ABSROT END'])
-        parang_start = float(fits_header['ESO TEL PARANG START'])
-        parang_end = float(fits_header['ESO TEL PARANG END'])
-        alt = float(fits_header['ESO TEL ALT'])
-        instrument_offset = -0.55
+        #rot_start = float(fits_header['ESO ADA ABSROT START'])
+        #rot_end = float(fits_header['ESO ADA ABSROT END'])
+        #parang_start = float(fits_header['ESO TEL PARANG START'])
+        #parang_end = float(fits_header['ESO TEL PARANG END'])
+        #alt = float(fits_header['ESO TEL ALT'])
+        #instrument_offset = -0.55
+        pa_start = fits_header['HIERARCH ESO ADA POSANG']
+        pa_end = fits_header['HIERARCH ESO ADA POSANG END']
+        pa_jump = (pa_end-pa_start)/float(data.shape[0])
         offset_x = int(fits_header['ESO SEQ CUMOFFSETX'])
         offset_y = int(fits_header['ESO SEQ CUMOFFSETY'])
         mode = fits_header['HIERARCH ESO DET MODE NAME']
@@ -750,9 +785,10 @@ class cube(object):
             
             # Compute parallactic angle
             # FIXME
-            pas[i] = alt+instrument_offset+\
-                         (rot_start+(rot_end-rot_start)/float(data.shape[0])*float(i))-\
-                         (180.-(parang_start+(parang_end-parang_start)/float(data.shape[0])*float(i)))
+#            pas[i] = alt+instrument_offset+\
+#                         (rot_start+(rot_end-rot_start)/float(data.shape[0])*float(i))-\
+#                         (180.-(parang_start+(parang_end-parang_start)/float(data.shape[0])*float(i)))
+            pas[i] = pa_start+pa_jump*(i+0.5)
             
             # Subtract master dark and normalize by master flat
             frame = np.true_divide(frame-dark, flat)
