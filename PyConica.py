@@ -24,6 +24,9 @@ import scipy.ndimage as nd
 from scipy.optimize import minimize
 from xml.dom import minidom
 
+import matplotlib
+matplotlib.rcParams['font.family'] = 'serif'
+
 
 # PARAMETERS
 #==============================================================================
@@ -174,13 +177,16 @@ def fit_polynomial_to_detcheck(detcheck_dir):
     yy = pp[3]+pp[2]*xx+pp[1]*xx**2+pp[0]*xx**3
     
     if (make_plots):
-        f, axarr = plt.subplots(1, 2, figsize=(12, 6))
+        small = 16
+        large = 16
+        f, axarr = plt.subplots(1, 2, figsize=(16.6, 2.9625*2.))
+        
         axarr[0].axhline(linearity_range, color='red', lw=3)
-        text = axarr[0].text(30-1, linearity_range+500, 'linearity range', ha='right', va='bottom', color='red', fontsize=16)
-        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        text = axarr[0].text(30-1, linearity_range+500, 'linearity range', ha='right', va='bottom', color='red', fontsize=small)
+        text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
         axarr[0].axhline(saturation_threshold, color='red', lw=3)
-        text = axarr[0].text(0+1, saturation_threshold+500, 'saturation threshold', ha='left', va='bottom', color='red', fontsize=16)
-        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        text = axarr[0].text(0+1, saturation_threshold+500, 'saturation threshold', ha='left', va='bottom', color='red', fontsize=small)
+        text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
         axarr[0].plot(x, y, 'o-', lw=3, label='detcheck data')
         axarr[0].plot(x, yyL, 'o-', lw=3, label='linear fit')
         axarr[0].plot(x, yyC, 'o-', lw=3, label='cubic fit')
@@ -190,20 +196,20 @@ def fit_polynomial_to_detcheck(detcheck_dir):
         axarr[0].set_ylim([-4000, 28000])
         axarr[0].set_xticks(x_ticks)
         axarr[0].set_yticks(y_ticks)
-        axarr[0].set_xticklabels(x_ticks, fontsize=16)
-        axarr[0].set_yticklabels(y_ticks, fontsize=16)
-        axarr[0].set_xlabel('exposure time [s]', fontsize=20)
-        axarr[0].set_ylabel('pixel count (measured)', fontsize=20)
-        axarr[0].tick_params(direction='in')
+        axarr[0].set_xticklabels(x_ticks, fontsize=small)
+        axarr[0].set_yticklabels(y_ticks, fontsize=small)
+        axarr[0].set_xlabel('exposure time [s]', fontsize=large)
+        axarr[0].set_ylabel('pixel count (measured)', fontsize=large)
         axarr[0].grid()
-        axarr[0].legend(fontsize=20, framealpha=1, loc='lower right')
+        axarr[0].tick_params(direction='in')
+        axarr[0].legend(fontsize=large, framealpha=1, loc='lower right')
         
         axarr[1].axvline(linearity_range, color='red', lw=3)
-        text = axarr[1].text(linearity_range+500, -4000+500, 'linearity range', ha='left', va='bottom', rotation=90, color='red', fontsize=16)
-        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])
+        text = axarr[1].text(linearity_range+500, -4000+500, 'linearity range', ha='left', va='bottom', rotation=90, color='red', fontsize=small)
+        text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
         axarr[1].axvline(saturation_threshold, color='red', lw=3)
-        text = axarr[1].text(saturation_threshold+500, -4000+500, 'saturation threshold', ha='left', va='bottom', rotation=90, color='red', fontsize=16)
-        text.set_path_effects([PathEffects.withStroke(linewidth=5, foreground='white')])        
+        text = axarr[1].text(saturation_threshold+500, -4000+500, 'saturation threshold', ha='left', va='bottom', rotation=90, color='red', fontsize=small)
+        text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])        
         axarr[1].plot(yyC, yyL, 'o-', lw=3, label='correction curve')
         axarr[1].plot(xx, yy, lw=3, label='cubic fit')
         x_ticks = np.arange(-4000, 24000, 8000)
@@ -212,13 +218,13 @@ def fit_polynomial_to_detcheck(detcheck_dir):
         axarr[1].set_ylim([-4000, 28000])
         axarr[1].set_xticks(x_ticks)
         axarr[1].set_yticks(y_ticks)
-        axarr[1].set_xticklabels(x_ticks, fontsize=16)
-        axarr[1].set_yticklabels(y_ticks, fontsize=16)
-        axarr[1].set_xlabel('pixel count (measured)', fontsize=20)
-        axarr[1].set_ylabel('pixel count (linearized)', fontsize=20)
+        axarr[1].set_xticklabels(x_ticks, fontsize=small)
+        axarr[1].set_yticklabels(y_ticks, fontsize=small)
+        axarr[1].set_xlabel('pixel count (measured)', fontsize=large)
+        axarr[1].set_ylabel('pixel count (linearized)', fontsize=large)
         axarr[1].grid()
         axarr[1].tick_params(direction='in')
-        axarr[1].legend(fontsize=20, framealpha=1, loc='upper left')
+        axarr[1].legend(fontsize=large, framealpha=1, loc='upper left')
         
         plt.tight_layout()
         plt.savefig(detcheck_dir+'detector_linearization_correction.pdf', bbox_inches='tight')
@@ -943,6 +949,7 @@ class cube(object):
                 dummy = np.roll(np.roll(dummy,\
                                 int(sub_size/2)-max_y[i], axis=0),\
                                 int(sub_size/2)-max_x[i], axis=1)[0:sub_size, 0:sub_size]
+                temp = dummy.copy()
                 p00 = axarr[0, 0].imshow(dummy, vmin=vmin, vmax=vmax)
                 axarr[0, 0].set_title('Median of cleaned data cube')
             
@@ -1003,6 +1010,46 @@ class cube(object):
                     plt.savefig(self.cdir+cubes[i]+'_jitter.pdf', bbox_inches='tight')
                     plt.show(block=block_plots)
                     plt.close()
+            
+            if (make_plots):
+#                small = 16
+#                large = 16
+#                f, axarr = plt.subplots(1, 2, figsize=(7.9, 2.9625))
+#                
+##                p0 = axarr[0].imshow(temp, vmin=-60, vmax=60, origin='lower')
+#                p0 = axarr[0].imshow(np.arcsinh(temp), vmin=-4, vmax=9, origin='lower')
+##                c0 = plt.colorbar(p0, ax=axarr[0])
+##                c0.set_label('pixel count', rotation=270, labelpad=20, fontsize=large)
+##                c0.ax.set_yticklabels(c0.ax.get_yticklabels(), fontsize=small)
+#                x_ticks = np.arange(0, 114, 19)
+#                y_ticks = np.arange(0, 114, 19)
+#                axarr[0].set_xticks(x_ticks)
+#                axarr[0].set_yticks(y_ticks)
+#                axarr[0].set_xticklabels(x_ticks+1, fontsize=small)
+#                axarr[0].set_yticklabels(y_ticks+1, fontsize=small)
+#                axarr[0].set_xlabel('size [pixel]', fontsize=large)
+#                axarr[0].set_ylabel('size [pixel]', fontsize=large)
+#                axarr[0].tick_params(direction='in')
+#                
+##                p1 = axarr[1].imshow(np.median(sub_data, axis=0), vmin=-30, vmax=30, origin='lower')
+#                p1 = axarr[1].imshow(np.arcsinh(np.median(sub_data, axis=0)), vmin=-4, vmax=9, origin='lower')
+##                c1 = plt.colorbar(p1, ax=axarr[1])
+##                c1.set_label('pixel count', rotation=270, labelpad=20, fontsize=large)
+##                c1.ax.set_yticklabels(c1.ax.get_yticklabels(), fontsize=small)
+#                x_ticks = np.arange(0, 114, 19)
+#                y_ticks = np.arange(0, 114, 19)
+#                axarr[1].set_xticks(x_ticks)
+#                axarr[1].set_yticks(y_ticks)
+#                axarr[1].set_xticklabels(x_ticks+1, fontsize=small)
+#                axarr[1].set_yticklabels(y_ticks+1, fontsize=small)
+#                axarr[1].set_xlabel('size [pixel]', fontsize=large)
+#                axarr[1].set_ylabel('size [pixel]', fontsize=large)
+#                axarr[1].tick_params(direction='in')
+#                
+#                plt.tight_layout()
+#                plt.savefig('/home/kjens/hip_47425_dark_flat_background_subtraction.pdf', bbox_inches='tight')
+#                plt.show(block=block_plots)
+#                plt.close()
             
             # Save data cube
             fits_file = pyfits.open(self.cdir+cubes[i]+'_cleaned.fits')
@@ -1067,7 +1114,9 @@ class cube(object):
             if (make_plots):
                 f, axarr = plt.subplots(2, 2, figsize=(12, 9))
                 dummy = np.median(data, axis=0)
-                p00 = axarr[0, 0].plot((dummy[sub_size/2, :]+dummy[:, sub_size/2])/2.)
+                dummy = (dummy[sub_size/2, :]+dummy[:, sub_size/2])/2.
+                temp = dummy.copy()
+                p00 = axarr[0, 0].plot(dummy)
                 axarr[0, 0].set_title('PSF cross-section before correction')
                 dummy = np.sum(sat_pixels, axis=0)/float(sat_pixels.shape[0])
                 dummy[bad_pixels > 0.5] = 0
@@ -1145,6 +1194,51 @@ class cube(object):
                 plt.savefig(self.cdir+cubes[i]+'_bpcorrected.pdf', bbox_inches='tight')
                 plt.show(block=block_plots)
                 plt.close()
+            
+#            if (make_plots):
+#                small = 16
+#                large = 16
+#                f, axarr = plt.subplots(1, 2, figsize=(7.9, 2.9625))
+#                
+#                axarr[0].plot(temp, lw=3, label='saturated')
+#                ll = temp.max()
+#                axarr[0].axhline(ll, color='black', lw=3, ls='--')
+#                x_ticks = np.arange(0, 114, 19)
+#                y_ticks = np.arange(0, 60000, 10000)
+#                axarr[0].set_xlim([0, 95])
+#                axarr[0].set_ylim([0, 50000])
+#                axarr[0].set_xticks(x_ticks)
+#                axarr[0].set_yticks(y_ticks)
+#                axarr[0].set_xticklabels(x_ticks+1, fontsize=small)
+#                axarr[0].set_yticklabels(y_ticks, fontsize=small)
+#                axarr[0].set_xlabel('size [pixel]', fontsize=large)
+#                axarr[0].set_ylabel('pixel count', fontsize=large)
+#                axarr[0].tick_params(direction='in')
+#                axarr[0].grid()
+#                axarr[0].legend(fontsize=large, framealpha=1, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+#                
+#                temp = np.median(data, axis=0)
+#                temp = (temp[sub_size/2, :]+temp[:, sub_size/2])/2.
+#                axarr[1].plot(temp, lw=3, label='reconstructed')
+#                axarr[1].axhline(ll, color='black', lw=3, ls='--')
+#                x_ticks = np.arange(0, 114, 19)
+#                y_ticks = np.arange(0, 60000, 10000)
+#                axarr[1].set_xlim([0, 95])
+#                axarr[1].set_ylim([0, 50000])
+#                axarr[1].set_xticks(x_ticks)
+#                axarr[1].set_yticks(y_ticks)
+#                axarr[1].set_xticklabels(x_ticks+1, fontsize=small)
+#                axarr[1].set_yticklabels(y_ticks, fontsize=small)
+#                axarr[1].set_xlabel('size [pixel]', fontsize=large)
+#                axarr[1].set_ylabel('pixel count', fontsize=large)
+#                axarr[1].tick_params(direction='in')
+#                axarr[1].grid()
+#                axarr[1].legend(fontsize=large, framealpha=1, loc='upper center', bbox_to_anchor=(0.5, 1.1))
+#                
+#                plt.tight_layout()
+#                plt.savefig('/home/kjens/hip_47425_cross_section.pdf', bbox_inches='tight')
+#                plt.show(block=block_plots)
+#                plt.close()
             
             # Save data cube
             fits_file[0].data = data

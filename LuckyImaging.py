@@ -17,10 +17,14 @@ sys.path.append('/home/kjens/Python/Packages/opticstools/opticstools/opticstools
 import astropy.io.fits as pyfits
 import heapq as hq
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as PathEffects
 import numpy as np
 import opticstools as ot
 import os
 import time
+
+import matplotlib
+matplotlib.rcParams['font.family'] = 'serif'
 
 
 # PARAMETERS
@@ -39,6 +43,7 @@ sub_size = 96
 #==============================================================================
 print('--> Scanning cubes directory for bad pixel corrected fits files')
 fits_paths = [f for f in os.listdir(cdir) if f.endswith('bpcorrected.fits')]
+fits_paths = [f for f in os.listdir(cdir) if 'HIP116258' in f and f.endswith('bpcorrected.fits')]
 print('Identified '+str(len(fits_paths))+' bad pixel corrected fits files')
 time.sleep(3)
 
@@ -100,6 +105,34 @@ for i in range(len(fits_paths)):
         plt.savefig(odir+fits_paths[i][:-17]+'_lucky.pdf', bbox_inches='tight')
         plt.show(block=block_plots)
         plt.close()
+    
+#    if (make_plots):
+#        small = 16
+#        large = 16
+#        plt.figure(figsize=(7.9, 2.9625))
+#        axarr = plt.gca()
+#        
+#        axarr.plot(peak, lw=3)
+#        axarr.axhline(peak_cut, color='red', lw=3)
+#        text = axarr.text(0+1, peak_cut-500, 'rejection threshold', ha='left', va='top', color='red', fontsize=small)
+#        text.set_path_effects([PathEffects.withStroke(linewidth=3, foreground='white')])
+#        x_ticks = np.arange(0, 120, 20)
+#        y_ticks = np.arange(0, 18000, 3000)
+#        axarr.set_xlim([0, 100])
+#        axarr.set_ylim([0, 15000])
+#        axarr.set_xticks(x_ticks)
+#        axarr.set_yticks(y_ticks)
+#        axarr.set_xticklabels(x_ticks, fontsize=small)
+#        axarr.set_yticklabels(y_ticks, fontsize=small)
+#        axarr.set_xlabel('frame number', fontsize=large)
+#        axarr.set_ylabel('peak count', fontsize=large)
+#        axarr.grid()
+#        axarr.tick_params(direction='in')
+#        
+#        plt.tight_layout()
+#        plt.savefig('/home/kjens/hip_116258_lucky_imaging.pdf', bbox_inches='tight')
+#        plt.show(block=True)
+#        plt.close()
     
     if (make_unimportant_plots):
         plt.figure()

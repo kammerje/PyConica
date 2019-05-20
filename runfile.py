@@ -33,6 +33,7 @@ time.sleep(3)
 
 times = [time.time()]
 for i in range(len(xml_paths)):
+#for i in [20]:
     
     logfile = open('log.txt', 'a')
     logfile.write('--> Processing '+xml_paths[i]+', file %03d' % (i+1)+' of %03d' % (len(xml_paths))+'\n')
